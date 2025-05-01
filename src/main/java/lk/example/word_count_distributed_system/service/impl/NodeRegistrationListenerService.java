@@ -56,10 +56,10 @@ public class NodeRegistrationListenerService {
     public void handleNodeRegistration(ConsumerRecord<String, String> consumerRecord) {
         String message = consumerRecord.value();
         String nId = message.split(" ")[0];
-        log.info("<<<<<<< Received node registration. port : {} ,Node id : {} >>>>>>>",message.split(" ")[1], nId);
+        log.info("####### New node registration. port : {} ,Node id : {} #######",message.split(" ")[1], nId);
         registeredNodes.add(nId);
         registeredNodesValues.add(Integer.valueOf(message.split(" ")[2]));
-        log.info("<<<<<< Current registered nodes count: {} >>>>>>", registeredNodes.size());
+        log.info("####### Current registered nodes count: {} #######", registeredNodes.size());
 
         int randomMillis = ThreadLocalRandom.current().nextInt(0, 3000);
         try {
@@ -75,7 +75,7 @@ public class NodeRegistrationListenerService {
             leaderElection.setNode(nodeId);
             leaderElection.setPort(port);
             leaderElectionRepository.save(leaderElection);
-            log.info("<<<<<<< Election has been started by node  - {} port {} >>>>>>",nodeId,port);
+            log.info("####### Election started by node  - {} port {} #######",nodeId,port);
             startElection();
         }  else if(Objects.nonNull(electedLeader)){
             if(Role.COORDINATOR.equals(role)){
@@ -113,11 +113,6 @@ public class NodeRegistrationListenerService {
             return;
         }
 
-//        List<Character> letters = new ArrayList<>();
-//        for (char c = 'A'; c <= 'Z'; c++) {
-//            letters.add(c);
-//        }
-
         int proposerCount = proposers.size();
         int lettersPerProposer = 26 / proposerCount;
         int extraLetters = 26 % proposerCount;
@@ -141,7 +136,7 @@ public class NodeRegistrationListenerService {
         kafkaTemplate.send("coordinator_topic", port +" "+nodeId);
         role=Role.COORDINATOR;
         electedLeader=nodeId;
-        log.info("<<<<I am the new leader: {} port = {}>>>>>", nodeId,port);
+        log.info("####### I am the new leader: {} port = {} #######", nodeId,port);
         roleAssign();
     }
 
@@ -162,7 +157,7 @@ public class NodeRegistrationListenerService {
 //        log.info("strings[0].equals(nodeId) {} node id{}  sent nodeid {}",strings[0].equals(nodeId),nodeId,strings[0]);
         if(strings[0].equals(nodeId) && Objects.isNull(electedLeader)) {
             int fromPort = Integer.parseInt(strings[2]);
-            log.info("<<<<<<< Election has been handed over from port - {} to {} >>>>>>", fromPort, port);
+            log.info("####### Election has been handed over from port - {} to {} #######", fromPort, port);
             int senderValue = Integer.parseInt(strings[1]);
             if (senderValue < value) {
                 kafkaTemplate.send("node_election_forward_topic", String.valueOf(value), "OK from " + nodeId + " " + port+" "+strings[3]);
@@ -176,7 +171,7 @@ public class NodeRegistrationListenerService {
     public void onElectionForward(String message) {
         String[] strings = message.split(" ");
         if(strings[4].equals(nodeId) && Objects.isNull(electedLeader)) {
-            log.info("<<<<<<< Election has been continued by port {} >>>>>>", strings[3]);
+            log.info("####### Election has been continued by port {} #######", strings[3]);
         }
     }
 
@@ -185,7 +180,7 @@ public class NodeRegistrationListenerService {
         String leaderId = message.split(" ")[1];
         if(!leaderId.equals(nodeId) && Objects.isNull(electedLeader)) {
             String leaderPort = message.split(" ")[0];
-            log.info("<<<<< Leader selected, port = {} ,node id = {} >>>>>",leaderPort, leaderId);
+            log.info("####### Leader selected, port = {} ,node id = {} #######",leaderPort, leaderId);
             electedLeader=leaderId;
         }
     }
@@ -195,7 +190,7 @@ public class NodeRegistrationListenerService {
         for(String processor :processorIds){
             if(nodeId.equals(processor)){
                 role=Role.PROPOSER;
-                log.info("<<<I am a processor. port {}>>>",port);
+                log.info("####### I am a processor. port {} #######",port);
             }
         }
     }
@@ -205,7 +200,7 @@ public class NodeRegistrationListenerService {
         for(String acceptor :acceptorIds){
             if(nodeId.equals(acceptor)){
                 role=Role.ACCEPTOR;
-                log.info("<<<I am a acceptor. port {}>>>",port);
+                log.info("####### I am a acceptor. port {} #######",port);
             }
         }
     }
@@ -213,7 +208,7 @@ public class NodeRegistrationListenerService {
     public void onLearnerAssign(String message) {
         if(message.equals(nodeId)){
             role=Role.LEARNER;
-            log.info("<<<I am a learner. port {}>>>",port);
+            log.info("####### I am a learner. port {} #######",port);
             log.info("Counting words ...");
         }
 
@@ -413,15 +408,7 @@ public class NodeRegistrationListenerService {
             String lineNumber = messages[1];
             String totalLine = messages[0];
             String word = messages[3];
-//            log.info("word : {}",word);
-//            log.info("totalAcceptors : {}",totalAcceptors);
 
-//        Long lineNumber = Long.getLong(messages[3]);
-//        Long wordCount = Long.getLong(messages[4]);
-//        Long wCount = wordCountForLine.get(lineNumber);
-//        if(Objects.isNull(wCount)){
-//            wordCountForLine.put(lineNumber,wordCount);
-//        }
             Integer count = wordCountForEachAcceptor.get(message);
             int newCount=0;
             //ToDo when recieve after majority of acceptor need to skipp
@@ -451,40 +438,22 @@ public class NodeRegistrationListenerService {
                     }
                 }
 
-//                printOutput("a");
-//            String word = messages[1];
-//            ArrayList<String> wordList = tempWordList.get(lineNumber);
-//            if(Objects.isNull(wordList)){
-//                ArrayList<String> words = new ArrayList<>();
-//                words.add(word);
-//                tempWordList.put(lineNumber,words);
-//            }else{
-//                ArrayList<String> strings = tempWordList.get(lineNumber);
-//                strings.add(word);
-//                tempWordList.put(lineNumber,strings);
-//            }
 
             }
             if(totalLine.equals(lineNumber)){
                 kafkaTemplate.send("count_close","Completed");
             }
-//            log.info("letterWordCount length {}",letterWordCount);
-//        if(wordCountForLine.get(lineNumber)==tempWordList.get(lineNumber).size()){
-//            saveWordInDatabase(lineNumber,tempWordList.get(lineNumber));
-//        }
+
         }
     }
-//    @Transactional
-//    public void saveWordInDatabase(Long lineNumber,ArrayList<String> wordList){
-//
-//    }
+
 @KafkaListener(topics = "count_close", groupId = "${spring.kafka.consumer.group-id}")
 public void printOutput(String message) {
     if (Role.LEARNER.equals(role) && count == 1) {
         count--;
-        System.out.println("-----------------------------------------------------------------------");
+        System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         System.out.printf("| %-5s | %-50s | %-5s |%n", "Letter", "Words", "Count");
-        System.out.println("-----------------------------------------------------------------------");
+        System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 
         for (Map.Entry<Character, ArrayList<String>> entry : letterWordCount.entrySet()) {
             Character letter = entry.getKey();
@@ -524,7 +493,7 @@ public void printOutput(String message) {
                         isFirstLine ? totalCount : ""
                 );
             }
-            System.out.println("-----------------------------------------------------------------------");
+            System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         }
 //        System.out.println("-----------------------------------------------------------------------");
     }
